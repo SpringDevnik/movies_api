@@ -1,8 +1,20 @@
-import requests
+import logging
+from typing import Annotated, Mapping
 
-from constants import AUTH_API_BASE_URL, BASE_HEADERS
-from core.http_client import HttpClient
+import allure
+from requests import Session
+
+from core.http.requests.http_client import HttpClient
+from core.pydantic.models.response_wrapper import HttpResponseWrapper
 from enums.auth.endpoints import Endpoint
+from models.api.auth.create_user import CreateUserRequest, CreateUserResponse
+from models.api.auth.get_user_info import GetUserInfoResponse
+from models.api.auth.login_user import LoginRequest, LoginResponse
+from models.api.auth.register_user import RegisterRequest, RegisterResponse
+from models.api.user import Credentials
+from _settings import settings
+
+IdOrEmail = Annotated[str, "UUID or Email"]
 
 
 class AuthApi(HttpClient):
@@ -11,49 +23,76 @@ class AuthApi(HttpClient):
     """
 
     def __init__(
-            self,
-            session=None,
-            base_url=AUTH_API_BASE_URL,
-            base_headers=BASE_HEADERS,
+        self,
+        *,
+        base_headers: Mapping[str, str] = settings.api.BASE_HEADERS,
+        base_url: str = settings.api.AUTH_API_BASE_URL,
+        session: Session | None = None,
+        logger: logging.Logger | None = None,
     ):
-        session_ = requests.Session() if session is None else session
-        super().__init__(session_, base_url, base_headers)
-
-    def register_user(self, user_data, expected_status=201):
-        """
-       Регистрация нового пользователя.
-       :param user_data: Данные пользователя.
-       :param expected_status: Ожидаемый статус-код.
-       """
-        return self.send_request(
-            method="POST",
-            endpoint=Endpoint.REGISTER.value,
-            data=user_data,
-            expected_status=expected_status,
+        super().__init__(
+            base_headers=base_headers,
+            session=session,
+            base_url=base_url,
+            logger=logger,
         )
 
-    def login_user(self, login_data, expected_status=200):
+    @allure.step("Зарегистрировать пользователя")
+    def register_user(
+        self,
+        request: RegisterRequest,
+    ) -> HttpResponseWrapper[RegisterResponse]:
+        """
+        Регистрация нового пользователя.
+        :param request: Данные запроса на регистрацию.
+        """
+        return self.post(
+            endpoint=str(Endpoint.REGISTER),
+            json=request.model_dump(by_alias=True),
+            response_model=RegisterResponse,
+        )
+
+    @allure.step("Авторизовать пользователя")
+    def login_user(
+        self,
+        request: LoginRequest,
+    ) -> HttpResponseWrapper[LoginResponse]:
         """
         Авторизация пользователя.
-        :param login_data: Данные для логина.
-        :param expected_status: Ожидаемый статус-код.
+        :param request: Данные для логина.
         """
-        return self.send_request(
-            method="POST",
-            endpoint=Endpoint.LOGIN.value,
-            data=login_data,
-            expected_status=expected_status,
+        return self.post(
+            endpoint=str(Endpoint.LOGIN),
+            json=request.model_dump(by_alias=True),
+            response_model=LoginResponse,
         )
 
-    def authenticate(self, user_creds):
-        login_data = {
-            "email": user_creds[0],
-            "password": user_creds[1]
-        }
+    @allure.step("Создать нового пользователя")
+    def create_user(
+        self,
+        request: CreateUserRequest,
+    ) -> HttpResponseWrapper[CreateUserResponse]:
+        return self.post(
+            endpoint=str(Endpoint.USER),
+            json=request.model_dump(by_alias=True),
+            response_model=CreateUserResponse,
+        )
 
-        response = self.login_user(login_data).json()
-        if "accessToken" not in response:
-            raise KeyError("token is missing")
+    @allure.step("Получить информацию о пользователе")
+    def get_user(
+        self,
+        locator: IdOrEmail,
+    ) -> HttpResponseWrapper[GetUserInfoResponse]:
+        return self.get(
+            endpoint=f"{Endpoint.USER.value}/{locator}",
+            response_model=GetUserInfoResponse,
+        )
 
-        token = response["accessToken"]
-        self._update_session_headers(**{"authorization": "Bearer " + token})
+    # todo Под вопросом
+    def authenticate(self, user_creds: Credentials) -> None:
+        login_request = LoginRequest(
+            email=user_creds.email,
+            password=user_creds.password,
+        )
+        access_token = self.login_user(login_request).response.access_token
+        self._update_session_headers(authorization=f"Bearer {access_token}")
