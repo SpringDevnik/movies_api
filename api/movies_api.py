@@ -12,7 +12,7 @@ from models.api.movies.delete_movie import DeleteMovieResponse
 from models.api.movies.get_genres_list import GetGenresListResponse
 from models.api.movies.get_movies import GetMoviesParams, GetMoviesResponse
 from models.api.movies.patch_movie import PatchMovieRequest, PatchMovieResponse
-from _settings import settings
+from settings import settings
 
 
 class MoviesApi(HttpClient):

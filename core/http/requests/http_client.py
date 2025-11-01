@@ -8,7 +8,7 @@ from requests import Session, Request
 from core.http.base_http_client import BaseHttpClient
 from core.http.requests.logging import allure_log_request, local_log_request, local_log_response
 from core.pydantic.models.response_wrapper import HttpResponseWrapper
-from _settings import settings
+from settings import settings
 
 T = TypeVar("T", bound=BaseModel)
 

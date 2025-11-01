@@ -12,7 +12,7 @@ from models.api.auth.get_user_info import GetUserInfoResponse
 from models.api.auth.login_user import LoginRequest, LoginResponse
 from models.api.auth.register_user import RegisterRequest, RegisterResponse
 from models.api.user import Credentials
-from _settings import settings
+from settings import settings
 
 IdOrEmail = Annotated[str, "UUID or Email"]
 

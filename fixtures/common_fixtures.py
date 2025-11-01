@@ -10,7 +10,7 @@ from core.db.sqlalchemy.postgres.pg_client import PgClient
 from enums.auth.user_roles import UserRole
 from fixtures.models.movies.user_context import UserContext
 from models.api.user import User, Credentials
-from _settings import settings
+from settings import settings
 
 
 @allure.title("Получение Postgres сессии")

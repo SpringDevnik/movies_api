@@ -4,7 +4,7 @@ import requests
 from api.api_manager import ApiManager
 from core.asserters.common_asserters import contains_all
 from models.api.user import Credentials
-from _settings import settings
+from settings import settings
 from models.api.movies.common.genre import Genre
 
 

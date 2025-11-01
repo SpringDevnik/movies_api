@@ -4,7 +4,7 @@ import allure
 import pytest
 import requests
 
-from _settings import settings
+from settings import settings
 from api.auth_api import AuthApi
 from api.movies_api import MoviesApi
 from core.utils.fake import generate_password
