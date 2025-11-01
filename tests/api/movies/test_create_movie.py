@@ -1,75 +1,71 @@
+import datetime
+from typing import cast
+
+import allure
 import pytest
-from requests import Response
-from urllib3.exceptions import HTTPError
 
-from asserters.movies_asserters import assert_genre_exist
+from core.asserters.common_asserters import equal, is_status_code
+from fixtures.models.movies.user_context import UserContext
+from helpers.db.movies_db_helper import MoviesDbHelper
+from models.api.movies.common.genre import Genre
+from models.api.movies.create_movie import CreateMovieRequest, CreateMovieResponse
 
 
+@allure.epic("movie")
+@allure.feature("Создание фильма")
 class TestCreateMovie:
 
-    def test_create_nonexistent_movie(
-            self,
-            super_admin_token,
-            random_movie_data,
-            api_manager,
-    ):
-        api_manager.movies_api._update_session_headers(
-            **{"Authorization": f"Bearer {super_admin_token}"},
+    @allure.story("Успешное создание фильма")
+    @allure.description("Создание нового фильма")
+    @allure.label("owner", "Andrey")
+    def test_create_movie_when_nonexist(
+        self,
+        f_super_admin_ctx: UserContext,
+        s_movie_db_helper: MoviesDbHelper,
+    ) -> None:
+        # TODO нужно изначально получать существующий жанр вместо хардкода
+        request = CreateMovieRequest(genre_id=1)
+        expected_response = CreateMovieResponse(
+            id=1,  # UNPREDICTABLE
+            name=request.name,
+            price=request.price,
+            description=request.description,
+            image_url=request.image_url,
+            location=request.location,
+            published=request.published,
+            genre_id=request.genre_id,
+            genre=Genre(name="UNPREDICTABLE"),
+            created_at=datetime.datetime.now(),  # UNPREDICTABLE
+            rating=0,
         )
+        response_wrapper = f_super_admin_ctx.api_manager.movies.create_movie(
+            request=request,
+        )
+        response_model, response = response_wrapper.as_tuple()
+        is_status_code(201, response)
+        response_model.match(expected_response)
 
-        response_data = api_manager.movies_api.create_movie(
-            movie_data=random_movie_data,
-        ).json()
+        movie = s_movie_db_helper.find_movie_by_name(cast(str, request.name))
+        equal(movie.price, request.price, "price")
+        equal(movie.description, request.description, "description")
+        equal(movie.image_url, request.image_url, "image_url")
+        # TODO остальные поля сравнивать не стал (лень)
+        # TODO быть может, стоит написать кастомный конвертер моделей
 
-        assert response_data["id"] > 0, "id не может быть отрицательным"
-        assert response_data["name"] == random_movie_data["name"], (
-            "name должно быть такое же, как в реквесте"
-        )
-        assert response_data["price"] == random_movie_data["price"], (
-            "цена не совпадает"
-        )
-        assert response_data["description"] == random_movie_data[
-            "description"], (
-            "описание фильма не совпадает"
-        )
-        assert response_data["imageUrl"] == random_movie_data["imageUrl"], (
-            "imageUrl фильма не совпадает"
-        )
-        assert response_data["location"] == random_movie_data["location"], (
-            "страна фильма не совпадает"
-        )
-        assert response_data["published"] == random_movie_data["published"], (
-            "статус публикации фильма не совпадает"
-        )
-        assert len(response_data["genre"]) == 1, (
-            "жанров фильма больше ожидаемого"
-        )
-        assert_genre_exist(
-            genreId=response_data["genreId"],
-            genreName=response_data["genre"]["name"],
-        )
-        # ассертер на дату не добавлял, так как нет инфы о тайм-зоне сервера
-        assert response_data["rating"] == 0, (
-            "рейтинг не равен значению по умолчанию"
-        )
-
+    @allure.story("Неуспешное создание фильма")
+    @allure.description("Создание нового фильма с отрицательной ценой")
+    @allure.label("owner", "Andrey")
     @pytest.mark.skip(reason="Отсутствует валидация имени")
-    def test_create_movie_with_negative_price(
-            self,
-            super_admin_token,
-            random_movie_data,
-            api_manager,
-    ):
-        random_movie_data["price"] = -1
+    def test_create_movie_when_price_negative(
+        self,
+        super_admin_ctx: UserContext,
+    ) -> None:
+        request = CreateMovieRequest(price=-1)
+        raw_response = super_admin_ctx.api_manager.movies.create_movie(request).raw_response
 
-        with pytest.raises(HTTPError):
-            response: Response = api_manager.movies_api.create_movie(
-                movie_data=random_movie_data,
-            ).json()
-
-        assert response.status_code == 400
-        assert response.json()["message"] == ("price cannot be "
-                                              "lover then 0"), (
-            "Сообщение об ошибке не совпадает с ожидаемым"
+        is_status_code(400, raw_response)
+        equal(
+            "price cannot be lover then 0",
+            raw_response.json()["message"],
+            "message",
         )
-        assert response.json()["statusCode"] == 400, "неверный статус код"

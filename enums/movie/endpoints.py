@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Endpoint(Enum):
-    POST_MOVIES = "/movies"
-    GET_GENRES = "/genres"
+class Endpoint(StrEnum):
+    MOVIES = "movies"
+    GENRES = "genres"

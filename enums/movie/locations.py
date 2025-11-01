@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Location(Enum):
-    MSK="MSK"
-    SPB="SPB"
+class Location(StrEnum):
+    MSK = "MSK"
+    SPB = "SPB"

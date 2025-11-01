@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: debug-statements
+      - id: check-builtin-literals
+      - id: check-toml
+
+  - repo: local
+    hooks:
+      - id: autoflake-imports
+        name: "delete unused imports with autoflake"
+        entry: make import
+        language: system
+        files: \.py$
+
+      - id: flake8-linter
+        name: "lint code with Flake8"
+        entry: make flake
+        language: system
+        files: \.py$
+
+      - id: black-format
+        name: "formatting code with Black"
+        entry: make black
+        language: system
+        files: \.py$
+
+      - id: mypy-check
+        name: "check types with Mypy"
+        entry: make mypy
+        language: system
+        files: \.py$

@@ -1,0 +1,96 @@
+[project]
+name = "cinescope"
+version = "0.1.0"
+description = ""
+authors = [
+    { name = "andrey", email = "larginator@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    # Testing
+    "pytest (>=8.4.2,<9.0.0)",
+    "pytest-rerunfailures (>=16.0.1,<17.0.0)",
+    "pytest-check (>=2.5.4,<3.0.0)",
+    "pytest-randomly (>=4.0.1,<5.0.0)",
+    # Multiprocessing
+    "pytest-xdist (>=3.8.0,<4.0.0)",
+    "filelock (>=3.20.0,<4.0.0)",
+    # Data generation
+    "faker (>=37.8.0,<38.0.0)",
+    # HTTP client
+    "requests (>=2.32.5,<3.0.0)",
+    # Database
+    "psycopg2 (>=2.9.10,<3.0.0)",
+    "sqlalchemy (>=2.0.43,<3.0.0)",
+    # Validation and settings
+    "pydantic (>=2.11.9,<3.0.0)",
+    "pydantic-settings (>=2.11.0,<3.0.0)",
+    # Static analysis and formatting
+    "mypy (>=1.18.2,<2.0.0)",
+    "black (>=25.9.0,<26.0.0)",
+    "isort (>=6.1.0,<7.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)",
+    "autoflake (>=2.3.1,<3.0.0)",
+    "types-requests (>=2.32.4.20250913,<3.0.0.0)",
+    # Git
+    "pre-commit (>=4.3.0,<5.0.0)",
+    # Reports
+    "allure-pytest (>=2.15.0,<3.0.0)",
+    "flake8-pyproject (>=1.2.3,<2.0.0)",
+    "curlify2 (>=2.0.0,<3.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-ra -vv --strict-markers --alluredir allure-results"
+xfail_strict = true
+log_cli = true
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s %(levelname)s %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+console_output_style = "times"
+testpaths = [
+    "tests",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.mypy]
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin"
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+warn_return_any = true
+pretty = true
+show_error_codes = true
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = "curlify2.*"
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 120
+
+[tool.flake8]
+max-line-length = 120
+exclude = [
+    '.venv',
+]
+
+[tool.isort]
+profile = "black"
+line_length = 120

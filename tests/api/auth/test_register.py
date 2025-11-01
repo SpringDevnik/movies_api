@@ -1,33 +1,38 @@
+import datetime
+
+import allure
+
+from api.auth_api import AuthApi
+from core.asserters.common_asserters import is_status_code
+from core.utils.fake import generate_password
+from enums.auth.user_roles import UserRole
+from models.api.auth.register_user import RegisterRequest, RegisterResponse
+
+
+@allure.epic("auth")
+@allure.feature("Регистрация пользователя")
 class TestRegister:
 
-    def test_register_user(self, api_manager, random_user):
-        """
-               Тест на регистрацию пользователя.
-               """
-        response = api_manager.auth_api.register_user(random_user)
-        response_data = response.json()
+    @allure.story("Успешная регистрация пользователя")
+    @allure.description("Регистрация нового пользователя")
+    @allure.label("owner", "Andrey")
+    def test_register_user(self, s_auth_api: AuthApi) -> None:
+        password = generate_password()
+        request = RegisterRequest(
+            password=password,
+            password_repeat=password,
+        )
+        expected_response = RegisterResponse(
+            id="unpredictable",
+            email=request.email,
+            full_name=request.full_name,
+            roles=[UserRole.USER],
+            banned=False,
+            verified=True,
+            created_at=datetime.datetime.now(),  # unpredictable
+        )
 
-        # Проверки
-        assert response_data["email"] == random_user[
-            "email"], "Email не совпадает"
-        assert "id" in response_data, "ID пользователя отсутствует в ответе"
-        assert "roles" in response_data, "Роли пользователя отсутствуют в ответе"
-        assert "USER" in response_data["roles"], ("Роль USER должна быть у "
-                                                  "пользователя")
+        response_model, response = s_auth_api.register_user(request).as_tuple()
 
-
-    def test_register_and_login_user(self, api_manager, random_user):
-        """
-        Тест на регистрацию и авторизацию пользователя.
-        """
-        login_data = {
-            "email": random_user["email"],
-            "password": random_user["password"]
-        }
-        response = api_manager.auth_api.login_user(login_data)
-        response_data = response.json()
-
-        # Проверки
-        assert "accessToken" in response_data, "Токен доступа отсутствует в ответе"
-        assert response_data["user"]["email"] == random_user[
-            "email"], "Email не совпадает"
+        is_status_code(201, response)
+        response_model.match(expected_response)
